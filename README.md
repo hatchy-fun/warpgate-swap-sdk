@@ -1,25 +1,51 @@
-# Warpgate Swap SDK
+# WarpGate Swap SDK
 
-A comprehensive SDK for building decentralized exchange applications on the Aptos blockchain using Warpgate Swap. This SDK provides essential tools for token swaps, liquidity management, and price calculations.
+[![npm version](https://img.shields.io/npm/v/warpgate-swap-sdk.svg)](https://www.npmjs.com/package/warpgate-swap-sdk)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-4.9%2B-blue)](https://www.typescriptlang.org/)
+
+TypeScript SDK for interacting with WarpGate Swap on Movement blockchain. This SDK provides a simple and intuitive way to integrate WarpGate Swap functionality into your applications.
+
+## Features
+
+- Token Swapping with Best Price Routing
+- Liquidity Pool Management
+- Price Calculations and Pool Information
+- Type-safe with TypeScript
+- Comprehensive Documentation
+- Full Test Coverage
 
 ## Installation
 
 ```bash
-npm install warpgate-swap-sdk
+npm install warpgate-swap-sdk @aptos-labs/ts-sdk
 ```
 
-## Features
+## Core Operations
 
-- **Aptos Blockchain Integration**: Native support for Aptos blockchain with type-safe Move contract interactions
-- **Token Management**: Create and manage tokens with support for native and custom coins
-- **Swap Operations**: Execute token swaps with optimal routing and slippage protection
-- **Liquidity Pool Management**: Add, remove, and manage liquidity positions
-- **Price Calculations**: Accurate price impact and optimal path calculations
-- **Type Safety**: Full TypeScript support with comprehensive type definitions
+### 1. Initialize Client
 
-## Usage
+```typescript
+import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk'
 
-### Token Operations
+// Initialize Aptos client
+const config = new AptosConfig({ network: Network.MAINNET })
+const client = new Aptos(config)
+
+// For testnet
+const testnetConfig = new AptosConfig({ network: Network.TESTNET })
+const testnetClient = new Aptos(testnetConfig)
+
+// For custom node
+const customConfig = new AptosConfig({ 
+  fullnode: "https://your-node-url",
+  // Optional: Include if you need to submit transactions
+  faucet: "https://your-faucet-url"  
+})
+const customClient = new Aptos(customConfig)
+```
+
+### 2. Token Swap
 
 ```typescript
 import { 
@@ -28,78 +54,163 @@ import {
   Pair,
   Route,
   Trade,
-  TradeType
+  TradeType,
+  Percent,
+  Router,
+  CurrencyAmount
 } from 'warpgate-swap-sdk'
 
-// Create tokens
-const tokenA = new Coin(
-  ChainId.TESTNET,
-  "0x1::coin::CoinA",
-  8,
-  "COINA",
-  "Coin A"
+// Initialize tokens
+const USDC = new Coin(
+  ChainId.MAINNET,
+  "0x1::coin::USDC",
+  6,
+  "USDC",
+  "USD Coin"
 )
 
-const tokenB = new Coin(
-  ChainId.TESTNET,
-  "0x1::coin::CoinB",
+const MOVE = new Coin(
+  ChainId.MAINNET,
+  "0x1::coin::MOVE",
   8,
-  "COINB",
-  "Coin B"
+  "MOVE",
+  "Movement Token"
 )
 
-// Create a pair
-const pair = new Pair(tokenA, tokenB)
+// Create a pair and route
+const pair = new Pair(USDC, MOVE)
+const route = new Route([pair], USDC, MOVE)
 
-// Create a route
-const route = new Route([pair], tokenA, tokenB)
-
-// Create a trade
-const trade = new Trade(
+// Create a trade with 1 USDC
+const trade = Trade.exactIn(
   route,
-  CurrencyAmount.fromRawAmount(tokenA, "1000000"),
-  TradeType.EXACT_INPUT
+  CurrencyAmount.fromRawAmount(USDC, "1000000"), // 1 USDC (6 decimals)
+  9975 // 0.25% fee
 )
+
+// Execute the swap with 0.5% slippage tolerance
+const router = new Router()
+const swapParams = router.swapCallParameters(trade, {
+  allowedSlippage: new Percent('50', '10000') // 0.5%
+})
+
+// Submit transaction
+const transaction = await client.generateTransaction(account.address, swapParams)
+const pendingTx = await client.signAndSubmitTransaction(account, transaction)
+const txResult = await client.waitForTransaction(pendingTx.hash)
 ```
 
-### Price Calculations
+### 3. Add Liquidity
 
 ```typescript
-// Get execution price
-const executionPrice = trade.executionPrice.toSignificant(6)
-console.log(`Execution Price: ${executionPrice}`)
+import { Router } from 'warpgate-swap-sdk'
 
-// Calculate price impact
-const priceImpact = trade.priceImpact.toSignificant(6)
-console.log(`Price Impact: ${priceImpact}%`)
+const router = new Router()
+
+// Add liquidity parameters
+const addLiquidityParams = router.addLiquidityParameters(
+  "1000000",      // Amount of token X (e.g., 1 USDC with 6 decimals)
+  "100000000",    // Amount of token Y (e.g., 1 MOVE with 8 decimals)
+  "995000",       // Minimum amount of token X (0.5% slippage)
+  "99500000",     // Minimum amount of token Y (0.5% slippage)
+  "0x1::coin::USDC",  // Token X address
+  "0x1::coin::MOVE",  // Token Y address
+  "30"           // Fee in basis points (0.3%)
+)
+
+// Submit transaction
+const transaction = await client.generateTransaction(account.address, addLiquidityParams)
+const pendingTx = await client.signAndSubmitTransaction(account, transaction)
+const txResult = await client.waitForTransaction(pendingTx.hash)
+```
+
+### 4. Remove Liquidity
+
+```typescript
+import { Router } from 'warpgate-swap-sdk'
+
+const router = new Router()
+
+// Remove liquidity parameters
+const removeLiquidityParams = router.removeLiquidityParameters(
+  "1000000",      // LP token amount to remove
+  "995000",       // Minimum amount of token X to receive (0.5% slippage)
+  "99500000",     // Minimum amount of token Y to receive (0.5% slippage)
+  "0x1::coin::USDC",  // Token X address
+  "0x1::coin::MOVE"   // Token Y address
+)
+
+// Submit transaction
+const transaction = await client.generateTransaction(account.address, removeLiquidityParams)
+const pendingTx = await client.signAndSubmitTransaction(account, removeLiquidityParams)
+const txResult = await client.waitForTransaction(pendingTx.hash)
+```
+
+### 5. Advanced Swap Operations
+
+```typescript
+import { Router, Trade, TradeType } from 'warpgate-swap-sdk'
+
+// For exact input swaps (you specify exact input amount)
+const exactInputTrade = Trade.exactIn(route, inputAmount, 9975) // 0.25% fee
+const exactInputParams = router.swapCallParameters(exactInputTrade, {
+  allowedSlippage: new Percent('50', '10000') // 0.5%
+})
+
+// For exact output swaps (you specify exact output amount)
+const exactOutputTrade = Trade.exactOut(route, outputAmount, 9975) // 0.25% fee
+const exactOutputParams = router.swapCallParameters(exactOutputTrade, {
+  allowedSlippage: new Percent('50', '10000') // 0.5%
+})
 ```
 
 ## Development
 
-### Building the Package
+### Setup
 
 ```bash
+# Clone the repository
+git clone https://github.com/hatchy-fun/warpgate-swap-sdk.git
+cd warpgate-swap-sdk
+
+# Install dependencies
 npm install
+
+# Build the project
 npm run build
-```
 
-### Running Tests
-
-```bash
-# Run all tests
+# Run tests
 npm test
-
-# Run tests in watch mode
-npm test -- --watch
-
-# Update snapshots
-npm test -- -u
 ```
+
+### Scripts
+
+- `npm run build` - Build the SDK
+- `npm test` - Run tests
+- `npm run lint` - Lint the code
+- `npm run format` - Format the code
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### Development Process
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## Security
+
+For security concerns, please open a security advisory on GitHub.
 
 ## License
 
-MIT License - see the [LICENSE](LICENSE) file for details
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+- [GitHub Issues](https://github.com/hatchy-fun/warpgate-swap-sdk/issues)
+- [Documentation](https://github.com/hatchy-fun/warpgate-swap-sdk#readme)
