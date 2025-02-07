@@ -1,7 +1,7 @@
-import { Hex } from '@aptos-labs/ts-sdk'
+import { Hex } from "@aptos-labs/ts-sdk";
 
 // eslint-disable-next-line no-use-before-define
-export type MaybeHexString = HexString | string
+export type MaybeHexString = HexString | string;
 
 /**
  * A util class for working with hex strings.
@@ -9,7 +9,7 @@ export type MaybeHexString = HexString | string
  */
 export class HexString {
   /// We want to make sure this hexString has the `0x` hex prefix
-  private readonly hexString: string
+  private readonly hexString: string;
 
   /**
    * Creates new hex string from Buffer
@@ -17,7 +17,7 @@ export class HexString {
    * @returns New HexString
    */
   static fromBuffer(buffer: Uint8Array): HexString {
-    return HexString.fromUint8Array(buffer)
+    return HexString.fromUint8Array(buffer);
   }
 
   /**
@@ -26,7 +26,7 @@ export class HexString {
    * @returns New HexString
    */
   static fromUint8Array(arr: Uint8Array): HexString {
-    return new HexString(Hex.fromHexInput(arr).toString())
+    return new HexString(Hex.fromHexInput(arr).toString());
   }
 
   /**
@@ -42,10 +42,10 @@ export class HexString {
    * ```
    */
   static ensure(hexString: MaybeHexString): HexString {
-    if (typeof hexString === 'string') {
-      return new HexString(hexString)
+    if (typeof hexString === "string") {
+      return new HexString(hexString);
     }
-    return hexString
+    return hexString;
   }
 
   /**
@@ -59,10 +59,10 @@ export class HexString {
    * ```
    */
   constructor(hexString: string) {
-    if (hexString.startsWith('0x')) {
-      this.hexString = hexString
+    if (hexString.startsWith("0x")) {
+      this.hexString = hexString;
     } else {
-      this.hexString = `0x${hexString}`
+      this.hexString = `0x${hexString}`;
     }
   }
 
@@ -71,7 +71,7 @@ export class HexString {
    * @returns Inner hex string
    */
   hex(): string {
-    return this.hexString
+    return this.hexString;
   }
 
   /**
@@ -84,7 +84,7 @@ export class HexString {
    * ```
    */
   noPrefix(): string {
-    return this.hexString.slice(2)
+    return this.hexString.slice(2);
   }
 
   /**
@@ -92,7 +92,7 @@ export class HexString {
    * @returns Inner hex string
    */
   toString(): string {
-    return this.hex()
+    return this.hex();
   }
 
   /**
@@ -104,8 +104,8 @@ export class HexString {
    * ```
    */
   toShortString(): string {
-    const trimmed = this.hexString.replace(/^0x0*/, '')
-    return `0x${trimmed}`
+    const trimmed = this.hexString.replace(/^0x0*/, "");
+    return `0x${trimmed}`;
   }
 
   /**
@@ -113,6 +113,6 @@ export class HexString {
    * @returns Uint8Array from inner hexString without prefix
    */
   toUint8Array(): Uint8Array {
-    return Uint8Array.from(Hex.fromHexInput(this.noPrefix()).toUint8Array())
+    return Uint8Array.from(Hex.fromHexInput(this.noPrefix()).toUint8Array());
   }
 }

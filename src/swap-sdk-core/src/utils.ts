@@ -1,31 +1,31 @@
-import invariant from 'tiny-invariant'
-import { ONE, THREE, TWO, VMType, VM_TYPE_MAXIMA, ZERO } from './constants'
-import { Currency } from './currency'
-import { CurrencyAmount, Percent, Price } from './fractions'
-import { Token } from './token'
+import invariant from "tiny-invariant";
+import { ONE, THREE, TWO, VMType, VM_TYPE_MAXIMA, ZERO } from "./constants";
+import { Currency } from "./currency";
+import { CurrencyAmount, Percent, Price } from "./fractions";
+import { Token } from "./token";
 
 export function validateVMTypeInstance(value: bigint, vmType: VMType): void {
-  invariant(value >= ZERO, `${value} is not a ${vmType}.`)
-  invariant(value <= VM_TYPE_MAXIMA[vmType], `${value} is not a ${vmType}.`)
+  invariant(value >= ZERO, `${value} is not a ${vmType}.`);
+  invariant(value <= VM_TYPE_MAXIMA[vmType], `${value} is not a ${vmType}.`);
 }
 
 // mock the on-chain sqrt function
 export function sqrt(y: bigint): bigint {
-  invariant(y >= ZERO, 'NEGATIVE')
+  invariant(y >= ZERO, "NEGATIVE");
 
-  let z: bigint = ZERO
-  let x: bigint
+  let z: bigint = ZERO;
+  let x: bigint;
   if (y > THREE) {
-    z = y
-    x = y / TWO + ONE
+    z = y;
+    x = y / TWO + ONE;
     while (x < z) {
-      z = x
-      x = (y / x + x) / TWO
+      z = x;
+      x = (y / x + x) / TWO;
     }
   } else if (y !== ZERO) {
-    z = ONE
+    z = ONE;
   }
-  return z
+  return z;
 }
 
 /* eslint-disable */
@@ -35,36 +35,36 @@ export function sortedInsert<T>(
   items: T[],
   add: T,
   maxSize: number,
-  comparator: (a: T, b: T) => number
+  comparator: (a: T, b: T) => number,
 ): T | null {
-  invariant(maxSize > 0, 'MAX_SIZE_ZERO')
+  invariant(maxSize > 0, "MAX_SIZE_ZERO");
   // this is an invariant because the interface cannot return multiple removed items if items.length exceeds maxSize
-  invariant(items.length <= maxSize, 'ITEMS_SIZE')
+  invariant(items.length <= maxSize, "ITEMS_SIZE");
 
   // short circuit first item add
   if (items.length === 0) {
-    items.push(add)
-    return null
+    items.push(add);
+    return null;
   } else {
-    const isFull = items.length === maxSize
+    const isFull = items.length === maxSize;
     // short circuit if full and the additional item does not come before the last item
     if (isFull && comparator(items[items.length - 1], add) <= 0) {
-      return add
+      return add;
     }
 
     let lo = 0,
-      hi = items.length
+      hi = items.length;
 
     while (lo < hi) {
-      const mid = (lo + hi) >>> 1
+      const mid = (lo + hi) >>> 1;
       if (comparator(items[mid], add) <= 0) {
-        lo = mid + 1
+        lo = mid + 1;
       } else {
-        hi = mid
+        hi = mid;
       }
     }
-    items.splice(lo, 0, add)
-    return isFull ? items.pop()! : null
+    items.splice(lo, 0, add);
+    return isFull ? items.pop()! : null;
   }
 }
 /* eslint-enable */
@@ -75,61 +75,73 @@ export function sortedInsert<T>(
  * @param inputAmount the input amount of the trade
  * @param outputAmount the output amount of the trade
  */
-export function computePriceImpact<TBase extends Currency, TQuote extends Currency>(
+export function computePriceImpact<
+  TBase extends Currency,
+  TQuote extends Currency,
+>(
   midPrice: Price<TBase, TQuote>,
   inputAmount: CurrencyAmount<TBase>,
-  outputAmount: CurrencyAmount<TQuote>
+  outputAmount: CurrencyAmount<TQuote>,
 ): Percent {
-  const quotedOutputAmount = midPrice.quote(inputAmount)
+  const quotedOutputAmount = midPrice.quote(inputAmount);
   // calculate price impact := (exactQuote - outputAmount) / exactQuote
-  const priceImpact = quotedOutputAmount.subtract(outputAmount).divide(quotedOutputAmount)
-  return new Percent(priceImpact.numerator, priceImpact.denominator)
+  const priceImpact = quotedOutputAmount
+    .subtract(outputAmount)
+    .divide(quotedOutputAmount);
+  return new Percent(priceImpact.numerator, priceImpact.denominator);
 }
 
 // compare two token amounts with highest one coming first
-function balanceComparator(balanceA?: CurrencyAmount<Token>, balanceB?: CurrencyAmount<Token>) {
+function balanceComparator(
+  balanceA?: CurrencyAmount<Token>,
+  balanceB?: CurrencyAmount<Token>,
+) {
   if (balanceA && balanceB) {
-    return balanceA.greaterThan(balanceB) ? -1 : balanceA.equalTo(balanceB) ? 0 : 1
+    return balanceA.greaterThan(balanceB)
+      ? -1
+      : balanceA.equalTo(balanceB)
+        ? 0
+        : 1;
   }
-  if (balanceA && balanceA.greaterThan('0')) {
-    return -1
+  if (balanceA && balanceA.greaterThan("0")) {
+    return -1;
   }
-  if (balanceB && balanceB.greaterThan('0')) {
-    return 1
+  if (balanceB && balanceB.greaterThan("0")) {
+    return 1;
   }
-  return 0
+  return 0;
 }
 
 export function getTokenComparator(balances: {
-  [tokenAddress: string]: CurrencyAmount<Token> | undefined
+  [tokenAddress: string]: CurrencyAmount<Token> | undefined;
 }): (tokenA: Token, tokenB: Token) => number {
   return function sortTokens(tokenA: Token, tokenB: Token): number {
     // -1 = a is first
     // 1 = b is first
 
     // sort by balances
-    const balanceA = balances[tokenA.address]
-    const balanceB = balances[tokenB.address]
+    const balanceA = balances[tokenA.address];
+    const balanceB = balances[tokenB.address];
 
-    const balanceComp = balanceComparator(balanceA, balanceB)
-    if (balanceComp !== 0) return balanceComp
+    const balanceComp = balanceComparator(balanceA, balanceB);
+    if (balanceComp !== 0) return balanceComp;
 
     if (tokenA.symbol && tokenB.symbol) {
       // sort by symbol
-      return tokenA.symbol.toLowerCase() < tokenB.symbol.toLowerCase() ? -1 : 1
+      return tokenA.symbol.toLowerCase() < tokenB.symbol.toLowerCase() ? -1 : 1;
     }
-    return tokenA.symbol ? -1 : tokenB.symbol ? -1 : 0
-  }
+    return tokenA.symbol ? -1 : tokenB.symbol ? -1 : 0;
+  };
 }
 
 export function sortCurrencies<T extends Currency>(currencies: T[]): T[] {
   return currencies.sort((a, b) => {
     if (a.isNative) {
-      return -1
+      return -1;
     }
     if (b.isNative) {
-      return 1
+      return 1;
     }
-    return a.sortsBefore(b) ? -1 : 1
-  })
+    return a.sortsBefore(b) ? -1 : 1;
+  });
 }

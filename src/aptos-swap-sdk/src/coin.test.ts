@@ -1,117 +1,122 @@
-import { describe, expect, it } from 'vitest'
-import { AptosCoin, ChainId, Coin } from '.'
+import { describe, expect, it } from "vitest";
+import { AptosCoin, ChainId, Coin } from ".";
 
-describe('Coin', () => {
+describe("Coin", () => {
   const ADDRESS_ONE =
-    '0x8c805723ebc0a7fc5b7d3e7b75d567918e806b3461cb9fa21941a9edc0220bf::devnet_coins::DevnetBTC'
+    "0x8c805723ebc0a7fc5b7d3e7b75d567918e806b3461cb9fa21941a9edc0220bf::devnet_coins::DevnetBTC";
   const ADDRESS_TWO =
-    '0x8c805723ebc0a7fc5b7d3e7b75d567918e806b3461cb9fa21941a9edc0220bf::devnet_coins::DevnetSOL'
+    "0x8c805723ebc0a7fc5b7d3e7b75d567918e806b3461cb9fa21941a9edc0220bf::devnet_coins::DevnetSOL";
 
   const ADDRESS_USDC =
-    '0x8c805723ebc0a7fc5b7d3e7b75d567918e806b3461cb9fa21941a9edc0220bf::devnet_coins::DevnetUSDC'
+    "0x8c805723ebc0a7fc5b7d3e7b75d567918e806b3461cb9fa21941a9edc0220bf::devnet_coins::DevnetUSDC";
   const ADDRESS_BUSD =
-    '0x8c805723ebc0a7fc5b7d3e7b75d567918e806b3461cb9fa21941a9edc0220bf::devnet_coins::DevnetBUSD'
+    "0x8c805723ebc0a7fc5b7d3e7b75d567918e806b3461cb9fa21941a9edc0220bf::devnet_coins::DevnetBUSD";
   const ADDRESS_BNB =
-    '0x8c805723ebc0a7fc5b7d3e7b75d567918e806b3461cb9fa21941a9edc0220bf::devnet_coins::DevnetBNB'
+    "0x8c805723ebc0a7fc5b7d3e7b75d567918e806b3461cb9fa21941a9edc0220bf::devnet_coins::DevnetBNB";
 
-  describe('#equals', () => {
-    it('fails if address differs', () => {
+  describe("#equals", () => {
+    it("fails if address differs", () => {
       expect(
-        new Coin(ChainId.TESTNET, ADDRESS_ONE, 18, 'WARP').equals(
-          new Coin(ChainId.TESTNET, ADDRESS_TWO, 18, 'WARP')
-        )
-      ).toBe(false)
-    })
+        new Coin(ChainId.TESTNET, ADDRESS_ONE, 18, "WARP").equals(
+          new Coin(ChainId.TESTNET, ADDRESS_TWO, 18, "WARP"),
+        ),
+      ).toBe(false);
+    });
 
-    it('false if chain id differs', () => {
+    it("false if chain id differs", () => {
       expect(
-        new Coin(ChainId.MAINNET, ADDRESS_ONE, 18, 'WARP').equals(
-          new Coin(ChainId.TESTNET, ADDRESS_ONE, 18, 'WARP')
-        )
-      ).toBe(false)
-    })
+        new Coin(ChainId.MAINNET, ADDRESS_ONE, 18, "WARP").equals(
+          new Coin(ChainId.TESTNET, ADDRESS_ONE, 18, "WARP"),
+        ),
+      ).toBe(false);
+    });
 
-    it('false if decimals differs', () => {
+    it("false if decimals differs", () => {
       expect(
-        new Coin(ChainId.TESTNET, ADDRESS_ONE, 9, 'WARP').equals(
-          new Coin(ChainId.TESTNET, ADDRESS_ONE, 18, 'WARP')
-        )
-      ).toBe(false)
-    })
+        new Coin(ChainId.TESTNET, ADDRESS_ONE, 9, "WARP").equals(
+          new Coin(ChainId.TESTNET, ADDRESS_ONE, 18, "WARP"),
+        ),
+      ).toBe(false);
+    });
 
-    it('true if only name is different', () => {
+    it("true if only name is different", () => {
       expect(
-        new Coin(ChainId.TESTNET, ADDRESS_ONE, 18, 'WARP').equals(
-          new Coin(ChainId.TESTNET, ADDRESS_ONE, 18, 'WARP')
-        )
-      ).toBe(true)
-    })
+        new Coin(ChainId.TESTNET, ADDRESS_ONE, 18, "WARP").equals(
+          new Coin(ChainId.TESTNET, ADDRESS_ONE, 18, "WARP"),
+        ),
+      ).toBe(true);
+    });
 
-    it('true on reference equality', () => {
-      const token = new Coin(ChainId.TESTNET, ADDRESS_ONE, 18, 'WARP')
-      expect(token.equals(token)).toBe(true)
-    })
+    it("true on reference equality", () => {
+      const token = new Coin(ChainId.TESTNET, ADDRESS_ONE, 18, "WARP");
+      expect(token.equals(token)).toBe(true);
+    });
 
-    it('true even if name/symbol/projectLink differ', () => {
+    it("true even if name/symbol/projectLink differ", () => {
       const tokenA = new Coin(
         ChainId.TESTNET,
         ADDRESS_ONE,
         9,
-        'abc',
-        'def',
-        'https://www.binance.org/'
-      )
+        "abc",
+        "def",
+        "https://www.binance.org/",
+      );
       const tokenB = new Coin(
         ChainId.TESTNET,
         ADDRESS_ONE,
         9,
-        'ghi',
-        'jkl',
-        'https://coinmarketcap.com/'
-      )
-      expect(tokenA.equals(tokenB)).toBe(true)
-    })
+        "ghi",
+        "jkl",
+        "https://coinmarketcap.com/",
+      );
+      expect(tokenA.equals(tokenB)).toBe(true);
+    });
 
-    it('sortBefore', () => {
-      const tokenA = new Coin(ChainId.TESTNET, ADDRESS_ONE, 8, 'BTC')
-      const tokenB = new Coin(ChainId.TESTNET, ADDRESS_TWO, 8, 'SOL')
+    it("sortBefore", () => {
+      const tokenA = new Coin(ChainId.TESTNET, ADDRESS_ONE, 8, "BTC");
+      const tokenB = new Coin(ChainId.TESTNET, ADDRESS_TWO, 8, "SOL");
 
-      expect(tokenA.sortsBefore(tokenB)).toBe(true)
+      expect(tokenA.sortsBefore(tokenB)).toBe(true);
 
-      const usdc = new Coin(ChainId.TESTNET, ADDRESS_USDC, 8, 'USDC')
-      const busd = new Coin(ChainId.TESTNET, ADDRESS_BUSD, 8, 'BUSD')
-      expect(usdc.sortsBefore(busd)).toBe(false)
+      const usdc = new Coin(ChainId.TESTNET, ADDRESS_USDC, 8, "USDC");
+      const busd = new Coin(ChainId.TESTNET, ADDRESS_BUSD, 8, "BUSD");
+      expect(usdc.sortsBefore(busd)).toBe(false);
 
-      const bnb = new Coin(ChainId.TESTNET, ADDRESS_BNB, 8, 'BNB')
-      expect(bnb.sortsBefore(busd)).toBe(true)
+      const bnb = new Coin(ChainId.TESTNET, ADDRESS_BNB, 8, "BNB");
+      expect(bnb.sortsBefore(busd)).toBe(true);
 
-      expect(AptosCoin.onChain(ChainId.TESTNET).sortsBefore(tokenA)).toBe(true)
-
-      expect(
-        new Coin(ChainId.TESTNET, '0x16::test_coins::TestBNB', 8, '').sortsBefore(
-          new Coin(ChainId.TESTNET, '0x123123123::swap_utils::TestBNB', 8, '')
-        )
-      ).toBe(false)
+      expect(AptosCoin.onChain(ChainId.TESTNET).sortsBefore(tokenA)).toBe(true);
 
       expect(
-        new Coin(ChainId.TESTNET, '0x16::warpgate::WARP', 8, '').sortsBefore(
-          new Coin(ChainId.TESTNET, '0x16::devnet_coins::DevnetBTC', 8, '')
-        )
-      ).toBe(false)
+        new Coin(
+          ChainId.TESTNET,
+          "0x16::test_coins::TestBNB",
+          8,
+          "",
+        ).sortsBefore(
+          new Coin(ChainId.TESTNET, "0x123123123::swap_utils::TestBNB", 8, ""),
+        ),
+      ).toBe(false);
 
       expect(
-        new Coin(ChainId.TESTNET, '0x16::FO::OBAR', 8, '').sortsBefore(
-          new Coin(ChainId.TESTNET, '0x16::FOO::BAR', 8, '')
-        )
-      ).toBe(true)
-    })
+        new Coin(ChainId.TESTNET, "0x16::warpgate::WARP", 8, "").sortsBefore(
+          new Coin(ChainId.TESTNET, "0x16::devnet_coins::DevnetBTC", 8, ""),
+        ),
+      ).toBe(false);
 
-    it('correct address', () => {
-      const tokenA = new Coin(ChainId.TESTNET, ADDRESS_ONE, 8, 'BTC')
-      const tokenB = new Coin(ChainId.TESTNET, ADDRESS_TWO, 8, 'SOL')
+      expect(
+        new Coin(ChainId.TESTNET, "0x16::FO::OBAR", 8, "").sortsBefore(
+          new Coin(ChainId.TESTNET, "0x16::FOO::BAR", 8, ""),
+        ),
+      ).toBe(true);
+    });
 
-      expect(tokenA.address).toBe(ADDRESS_ONE)
-      expect(tokenB.address).toBe(ADDRESS_TWO)
-    })
-  })
-})
+    it("correct address", () => {
+      const tokenA = new Coin(ChainId.TESTNET, ADDRESS_ONE, 8, "BTC");
+      const tokenB = new Coin(ChainId.TESTNET, ADDRESS_TWO, 8, "SOL");
+
+      expect(tokenA.address).toBe(ADDRESS_ONE);
+      expect(tokenB.address).toBe(ADDRESS_TWO);
+    });
+  });
+});

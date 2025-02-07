@@ -1,4 +1,4 @@
-import type { AptosCoin } from './aptosCoin'
-import type { Coin } from './coin'
+import type { AptosCoin } from "./aptosCoin";
+import type { Coin } from "./coin";
 
-export type Currency = AptosCoin | Coin
+export type Currency = AptosCoin | Coin;

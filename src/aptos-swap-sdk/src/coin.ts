@@ -1,7 +1,7 @@
-import { Token } from '../../swap-sdk-core/src'
+import { Token } from "../../swap-sdk-core/src";
 
-import { HexString } from './hexString'
-import { Currency } from './currency'
+import { HexString } from "./hexString";
+import { Currency } from "./currency";
 
 export class Coin extends Token {
   public constructor(
@@ -10,7 +10,7 @@ export class Coin extends Token {
     decimals: number,
     symbol: string,
     name?: string,
-    projectLink?: string
+    projectLink?: string,
   ) {
     super(
       chainId,
@@ -18,19 +18,20 @@ export class Coin extends Token {
       decimals,
       symbol,
       name,
-      projectLink
-    )
+      projectLink,
+    );
   }
 
   public sortsBefore(other: Currency): boolean {
-    return super.sortsBefore(other.wrapped)
+    return super.sortsBefore(other.wrapped);
   }
 
   public equals(other: Currency): boolean {
     return (
       this.chainId === other.chainId &&
       this.decimals === other.decimals &&
-      new HexString(this.address).toShortString() === new HexString(other.address).toShortString()
-    )
+      new HexString(this.address).toShortString() ===
+        new HexString(other.address).toShortString()
+    );
   }
 }

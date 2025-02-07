@@ -1,7 +1,7 @@
-import { expect, test } from 'vitest'
-import * as exports from './index'
+import { expect, test } from "vitest";
+import * as exports from "./index";
 
-test('exports', () => {
+test("exports", () => {
   expect(Object.keys(exports)).toMatchInlineSnapshot(`
     [
       "Coin",
@@ -15,6 +15,10 @@ test('exports', () => {
       "Router",
       "Pair",
       "Route",
+      "DEFAULT_FEE",
+      "FEE_PRECISION",
+      "getPairFee",
+      "getEffectiveFee",
       "inputOutputComparator",
       "tradeComparator",
       "Trade",
@@ -50,5 +54,5 @@ test('exports', () => {
       "getTokenComparator",
       "sortCurrencies",
     ]
-  `)
-})
+  `);
+});
