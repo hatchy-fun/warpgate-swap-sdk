@@ -26,29 +26,22 @@ npm install warpgate-swap-sdk @aptos-labs/ts-sdk
 ### 1. Initialize Client
 
 ```typescript
-import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk'
+import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
 
-// Initialize Aptos client
-const config = new AptosConfig({ network: Network.MAINNET })
-const client = new Aptos(config)
+// For Movement Network
+export const config = new AptosConfig({
+  network: Network.CUSTOM,
+  fullnode: "https://mainnet.movementnetwork.xyz/v1",
+  indexer: "https://indexer.mainnet.movementnetwork.xyz/v1",
+});
 
-// For testnet
-const testnetConfig = new AptosConfig({ network: Network.TESTNET })
-const testnetClient = new Aptos(testnetConfig)
-
-// For custom node
-const customConfig = new AptosConfig({ 
-  fullnode: "https://your-node-url",
-  // Optional: Include if you need to submit transactions
-  faucet: "https://your-faucet-url"  
-})
-const customClient = new Aptos(customConfig)
+export const aptos = new Aptos(config);
 ```
 
 ### 2. Token Swap
 
 ```typescript
-import { 
+import {
   Coin,
   ChainId,
   Pair,
@@ -57,8 +50,8 @@ import {
   TradeType,
   Percent,
   Router,
-  CurrencyAmount
-} from 'warpgate-swap-sdk'
+  CurrencyAmount,
+} from "warpgate-swap-sdk";
 
 // Initialize tokens
 const USDC = new Coin(
@@ -67,7 +60,7 @@ const USDC = new Coin(
   6,
   "USDC",
   "USD Coin"
-)
+);
 
 const MOVE = new Coin(
   ChainId.MAINNET,
@@ -75,93 +68,105 @@ const MOVE = new Coin(
   8,
   "MOVE",
   "Movement Token"
-)
+);
 
 // Create a pair and route
-const pair = new Pair(USDC, MOVE)
-const route = new Route([pair], USDC, MOVE)
+const pair = new Pair(USDC, MOVE);
+const route = new Route([pair], USDC, MOVE);
 
 // Create a trade with 1 USDC
 const trade = Trade.exactIn(
   route,
   CurrencyAmount.fromRawAmount(USDC, "1000000"), // 1 USDC (6 decimals)
   9975 // 0.25% fee
-)
+);
 
 // Execute the swap with 0.5% slippage tolerance
-const router = new Router()
+const router = new Router();
 const swapParams = router.swapCallParameters(trade, {
-  allowedSlippage: new Percent('50', '10000') // 0.5%
-})
+  allowedSlippage: new Percent("50", "10000"), // 0.5%
+});
 
 // Submit transaction
-const transaction = await client.generateTransaction(account.address, swapParams)
-const pendingTx = await client.signAndSubmitTransaction(account, transaction)
-const txResult = await client.waitForTransaction(pendingTx.hash)
+const transaction = await client.generateTransaction(
+  account.address,
+  swapParams
+);
+const pendingTx = await client.signAndSubmitTransaction(account, transaction);
+const txResult = await client.waitForTransaction(pendingTx.hash);
 ```
 
 ### 3. Add Liquidity
 
 ```typescript
-import { Router } from 'warpgate-swap-sdk'
+import { Router } from "warpgate-swap-sdk";
 
-const router = new Router()
+const router = new Router();
 
 // Add liquidity parameters
 const addLiquidityParams = router.addLiquidityParameters(
-  "1000000",      // Amount of token X (e.g., 1 USDC with 6 decimals)
-  "100000000",    // Amount of token Y (e.g., 1 MOVE with 8 decimals)
-  "995000",       // Minimum amount of token X (0.5% slippage)
-  "99500000",     // Minimum amount of token Y (0.5% slippage)
-  "0x1::coin::USDC",  // Token X address
-  "0x1::coin::MOVE",  // Token Y address
-  "30"           // Fee in basis points (0.3%)
-)
+  "1000000", // Amount of token X (e.g., 1 USDC with 6 decimals)
+  "100000000", // Amount of token Y (e.g., 1 MOVE with 8 decimals)
+  "995000", // Minimum amount of token X (0.5% slippage)
+  "99500000", // Minimum amount of token Y (0.5% slippage)
+  "0x1::coin::USDC", // Token X address
+  "0x1::coin::MOVE", // Token Y address
+  "30" // Fee in basis points (0.3%)
+);
 
 // Submit transaction
-const transaction = await client.generateTransaction(account.address, addLiquidityParams)
-const pendingTx = await client.signAndSubmitTransaction(account, transaction)
-const txResult = await client.waitForTransaction(pendingTx.hash)
+const transaction = await client.generateTransaction(
+  account.address,
+  addLiquidityParams
+);
+const pendingTx = await client.signAndSubmitTransaction(account, transaction);
+const txResult = await client.waitForTransaction(pendingTx.hash);
 ```
 
 ### 4. Remove Liquidity
 
 ```typescript
-import { Router } from 'warpgate-swap-sdk'
+import { Router } from "warpgate-swap-sdk";
 
-const router = new Router()
+const router = new Router();
 
 // Remove liquidity parameters
 const removeLiquidityParams = router.removeLiquidityParameters(
-  "1000000",      // LP token amount to remove
-  "995000",       // Minimum amount of token X to receive (0.5% slippage)
-  "99500000",     // Minimum amount of token Y to receive (0.5% slippage)
-  "0x1::coin::USDC",  // Token X address
-  "0x1::coin::MOVE"   // Token Y address
-)
+  "1000000", // LP token amount to remove
+  "995000", // Minimum amount of token X to receive (0.5% slippage)
+  "99500000", // Minimum amount of token Y to receive (0.5% slippage)
+  "0x1::coin::USDC", // Token X address
+  "0x1::coin::MOVE" // Token Y address
+);
 
 // Submit transaction
-const transaction = await client.generateTransaction(account.address, removeLiquidityParams)
-const pendingTx = await client.signAndSubmitTransaction(account, removeLiquidityParams)
-const txResult = await client.waitForTransaction(pendingTx.hash)
+const transaction = await client.generateTransaction(
+  account.address,
+  removeLiquidityParams
+);
+const pendingTx = await client.signAndSubmitTransaction(
+  account,
+  removeLiquidityParams
+);
+const txResult = await client.waitForTransaction(pendingTx.hash);
 ```
 
 ### 5. Advanced Swap Operations
 
 ```typescript
-import { Router, Trade, TradeType } from 'warpgate-swap-sdk'
+import { Router, Trade, TradeType } from "warpgate-swap-sdk";
 
 // For exact input swaps (you specify exact input amount)
-const exactInputTrade = Trade.exactIn(route, inputAmount, 9975) // 0.25% fee
+const exactInputTrade = Trade.exactIn(route, inputAmount, 9975); // 0.25% fee
 const exactInputParams = router.swapCallParameters(exactInputTrade, {
-  allowedSlippage: new Percent('50', '10000') // 0.5%
-})
+  allowedSlippage: new Percent("50", "10000"), // 0.5%
+});
 
 // For exact output swaps (you specify exact output amount)
-const exactOutputTrade = Trade.exactOut(route, outputAmount, 9975) // 0.25% fee
+const exactOutputTrade = Trade.exactOut(route, outputAmount, 9975); // 0.25% fee
 const exactOutputParams = router.swapCallParameters(exactOutputTrade, {
-  allowedSlippage: new Percent('50', '10000') // 0.5%
-})
+  allowedSlippage: new Percent("50", "10000"), // 0.5%
+});
 ```
 
 ## Development

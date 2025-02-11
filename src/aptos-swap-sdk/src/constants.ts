@@ -5,6 +5,7 @@ import { ADDRESS } from "./generated/swap";
 export enum ChainId {
   TESTNET = 2,
   MAINNET = 1,
+  MOVE_MAINNET = 126,
 }
 
 export const SWAP_ADDRESS = ADDRESS;
