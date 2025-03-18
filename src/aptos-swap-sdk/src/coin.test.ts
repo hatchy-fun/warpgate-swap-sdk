@@ -25,7 +25,7 @@ describe("Coin", () => {
 
     it("false if chain id differs", () => {
       expect(
-        new Coin(ChainId.MOVE_MAINNET, ADDRESS_ONE, 18, "WARP").equals(
+        new Coin(ChainId.TESTNET, ADDRESS_ONE, 18, "WARP").equals(
           new Coin(ChainId.MOVE_MAINNET, ADDRESS_ONE, 18, "WARP")
         )
       ).toBe(false);
