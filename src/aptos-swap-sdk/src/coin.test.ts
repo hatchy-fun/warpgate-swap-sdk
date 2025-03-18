@@ -18,32 +18,32 @@ describe("Coin", () => {
     it("fails if address differs", () => {
       expect(
         new Coin(ChainId.TESTNET, ADDRESS_ONE, 18, "WARP").equals(
-          new Coin(ChainId.TESTNET, ADDRESS_TWO, 18, "WARP"),
-        ),
+          new Coin(ChainId.TESTNET, ADDRESS_TWO, 18, "WARP")
+        )
       ).toBe(false);
     });
 
     it("false if chain id differs", () => {
       expect(
-        new Coin(ChainId.MAINNET, ADDRESS_ONE, 18, "WARP").equals(
-          new Coin(ChainId.TESTNET, ADDRESS_ONE, 18, "WARP"),
-        ),
+        new Coin(ChainId.MOVE_MAINNET, ADDRESS_ONE, 18, "WARP").equals(
+          new Coin(ChainId.MOVE_MAINNET, ADDRESS_ONE, 18, "WARP")
+        )
       ).toBe(false);
     });
 
     it("false if decimals differs", () => {
       expect(
         new Coin(ChainId.TESTNET, ADDRESS_ONE, 9, "WARP").equals(
-          new Coin(ChainId.TESTNET, ADDRESS_ONE, 18, "WARP"),
-        ),
+          new Coin(ChainId.TESTNET, ADDRESS_ONE, 18, "WARP")
+        )
       ).toBe(false);
     });
 
     it("true if only name is different", () => {
       expect(
         new Coin(ChainId.TESTNET, ADDRESS_ONE, 18, "WARP").equals(
-          new Coin(ChainId.TESTNET, ADDRESS_ONE, 18, "WARP"),
-        ),
+          new Coin(ChainId.TESTNET, ADDRESS_ONE, 18, "WARP")
+        )
       ).toBe(true);
     });
 
@@ -59,7 +59,7 @@ describe("Coin", () => {
         9,
         "abc",
         "def",
-        "https://www.binance.org/",
+        "https://www.binance.org/"
       );
       const tokenB = new Coin(
         ChainId.TESTNET,
@@ -67,7 +67,7 @@ describe("Coin", () => {
         9,
         "ghi",
         "jkl",
-        "https://coinmarketcap.com/",
+        "https://coinmarketcap.com/"
       );
       expect(tokenA.equals(tokenB)).toBe(true);
     });
@@ -92,22 +92,22 @@ describe("Coin", () => {
           ChainId.TESTNET,
           "0x16::test_coins::TestBNB",
           8,
-          "",
+          ""
         ).sortsBefore(
-          new Coin(ChainId.TESTNET, "0x123123123::swap_utils::TestBNB", 8, ""),
-        ),
+          new Coin(ChainId.TESTNET, "0x123123123::swap_utils::TestBNB", 8, "")
+        )
       ).toBe(false);
 
       expect(
         new Coin(ChainId.TESTNET, "0x16::warpgate::WARP", 8, "").sortsBefore(
-          new Coin(ChainId.TESTNET, "0x16::devnet_coins::DevnetBTC", 8, ""),
-        ),
+          new Coin(ChainId.TESTNET, "0x16::devnet_coins::DevnetBTC", 8, "")
+        )
       ).toBe(false);
 
       expect(
         new Coin(ChainId.TESTNET, "0x16::FO::OBAR", 8, "").sortsBefore(
-          new Coin(ChainId.TESTNET, "0x16::FOO::BAR", 8, ""),
-        ),
+          new Coin(ChainId.TESTNET, "0x16::FOO::BAR", 8, "")
+        )
       ).toBe(true);
     });
 

@@ -26,7 +26,7 @@ const typeArgToAddress = (typeArg: TypeTagStruct): string => {
     .map((ta) => typeArgToAddress(ta));
 
   return `${HexString.fromUint8Array(
-    typeArg.value.address.data,
+    typeArg.value.address.data
   ).toShortString()}::${typeArg.value.moduleName.identifier}::${
     typeArg.value.name.identifier
   }${children.length > 0 ? `<${children.join(", ")}>` : ""}`;
@@ -34,6 +34,7 @@ const typeArgToAddress = (typeArg: TypeTagStruct): string => {
 
 export class Pair {
   public readonly liquidityToken: Coin;
+  private readonly pairAddress: `0x${string}`;
 
   private readonly tokenAmounts: [
     CurrencyAmount<Currency>,
@@ -42,7 +43,7 @@ export class Pair {
 
   public static sortToken(
     tokenA: Currency,
-    tokenB: Currency,
+    tokenB: Currency
   ): [Currency, Currency] {
     const [token0, token1] = tokenA.sortsBefore(tokenB)
       ? [tokenA, tokenB]
@@ -58,7 +59,7 @@ export class Pair {
 
   public static getReservesAddress(
     tokenA: Currency,
-    tokenB: Currency,
+    tokenB: Currency
   ): `0x${string}` {
     const [token0, token1] = this.sortToken(tokenA, tokenB);
     return `${PAIR_RESERVE_TYPE_TAG}<${token0.address}, ${token1.address}>`;
@@ -81,34 +82,51 @@ export class Pair {
     return [address0, address1] as const;
   }
 
-  static getLiquidityToken(tokenA: Currency, tokenB: Currency) {
+  static getLiquidityToken(
+    tokenA: Currency,
+    tokenB: Currency,
+    customAddress?: `0x${string}`
+  ) {
     const [token0, token1] = this.sortToken(tokenA, tokenB);
+    const address = customAddress ?? this.getAddress(tokenA, tokenB);
     return new Coin(
       tokenA.chainId,
-      Pair.getAddress(tokenA, tokenB),
+      address,
       8,
       "Warpgate-LP",
-      `Warpgate-${token0.symbol}-${token1.symbol}-LP`,
+      `Warpgate-${token0.symbol}-${token1.symbol}-LP`
     );
   }
 
   public constructor(
     currencyAmountA: CurrencyAmount<Currency>,
     tokenAmountB: CurrencyAmount<Currency>,
+    customAddress?: `0x${string}`
   ) {
     const tokenAmounts = currencyAmountA.currency.sortsBefore(
-      tokenAmountB.currency,
+      tokenAmountB.currency
     ) // does safety checks
       ? [currencyAmountA, tokenAmountB]
       : [tokenAmountB, currencyAmountA];
+
+    this.pairAddress =
+      customAddress ??
+      Pair.getAddress(tokenAmounts[0].currency, tokenAmounts[1].currency);
+
     this.liquidityToken = Pair.getLiquidityToken(
       tokenAmounts[0].currency,
       tokenAmounts[1].currency,
+      customAddress
     );
+
     this.tokenAmounts = tokenAmounts as [
       CurrencyAmount<Currency>,
       CurrencyAmount<Currency>,
     ];
+  }
+
+  public get address(): `0x${string}` {
+    return this.pairAddress;
   }
 
   /**
@@ -128,7 +146,7 @@ export class Pair {
       this.token0,
       this.token1,
       result.denominator,
-      result.numerator,
+      result.numerator
     );
   }
 
@@ -141,7 +159,7 @@ export class Pair {
       this.token1,
       this.token0,
       result.denominator,
-      result.numerator,
+      result.numerator
     );
   }
 
@@ -184,7 +202,7 @@ export class Pair {
 
   public getOutputAmount(
     inputAmount: CurrencyAmount<Currency>,
-    fee = _9975,
+    fee = _9975
   ): [CurrencyAmount<Currency>, Pair] {
     invariant(this.involvesToken(inputAmount.currency), "TOKEN");
     if (this.reserve0.quotient === ZERO || this.reserve1.quotient === ZERO) {
@@ -194,14 +212,14 @@ export class Pair {
 
     const inputReserve = this.reserveOf(inputAmount.currency);
     const outputReserve = this.reserveOf(
-      inputAmount.currency.equals(this.token0) ? this.token1 : this.token0,
+      inputAmount.currency.equals(this.token0) ? this.token1 : this.token0
     );
     const inputAmountWithFee = inputAmount.quotient * actualFee;
     const numerator = inputAmountWithFee * outputReserve.quotient;
     const denominator = inputReserve.quotient * _10000 + inputAmountWithFee;
     const outputAmount = CurrencyAmount.fromRawAmount(
       inputAmount.currency.equals(this.token0) ? this.token1 : this.token0,
-      numerator / denominator,
+      numerator / denominator
     );
     if (outputAmount.quotient === ZERO) {
       throw new InsufficientInputAmountError();
@@ -210,14 +228,14 @@ export class Pair {
       outputAmount,
       new Pair(
         inputReserve.add(inputAmount),
-        outputReserve.subtract(outputAmount),
+        outputReserve.subtract(outputAmount)
       ),
     ];
   }
 
   public getInputAmount(
     outputAmount: CurrencyAmount<Currency>,
-    fee = _9975,
+    fee = _9975
   ): [CurrencyAmount<Currency>, Pair] {
     invariant(this.involvesToken(outputAmount.currency), "TOKEN");
     if (
@@ -230,19 +248,19 @@ export class Pair {
 
     const outputReserve = this.reserveOf(outputAmount.currency);
     const inputReserve = this.reserveOf(
-      outputAmount.currency.equals(this.token0) ? this.token1 : this.token0,
+      outputAmount.currency.equals(this.token0) ? this.token1 : this.token0
     );
     const numerator = inputReserve.quotient * outputAmount.quotient * _10000;
     const denominator = (outputReserve.quotient - outputAmount.quotient) * fee;
     const inputAmount = CurrencyAmount.fromRawAmount(
       outputAmount.currency.equals(this.token0) ? this.token1 : this.token0,
-      numerator / denominator + ONE,
+      numerator / denominator + ONE
     );
     return [
       inputAmount,
       new Pair(
         inputReserve.add(inputAmount),
-        outputReserve.subtract(outputAmount),
+        outputReserve.subtract(outputAmount)
       ),
     ];
   }
@@ -250,18 +268,18 @@ export class Pair {
   public getLiquidityMinted(
     totalSupply: CurrencyAmount<Currency>,
     tokenAmountA: CurrencyAmount<Currency>,
-    tokenAmountB: CurrencyAmount<Currency>,
+    tokenAmountB: CurrencyAmount<Currency>
   ): CurrencyAmount<Currency> {
     invariant(totalSupply.currency.equals(this.liquidityToken), "LIQUIDITY");
     const tokenAmounts = tokenAmountA.currency.sortsBefore(
-      tokenAmountB.currency,
+      tokenAmountB.currency
     ) // does safety checks
       ? [tokenAmountA, tokenAmountB]
       : [tokenAmountB, tokenAmountA];
     invariant(
       tokenAmounts[0].currency.equals(this.token0) &&
         tokenAmounts[1].currency.equals(this.token1),
-      "TOKEN",
+      "TOKEN"
     );
 
     let liquidity: bigint;
@@ -289,7 +307,7 @@ export class Pair {
     totalSupply: CurrencyAmount<Currency>,
     liquidity: CurrencyAmount<Currency>,
     feeOn = false,
-    kLast?: BigintIsh,
+    kLast?: BigintIsh
   ): CurrencyAmount<Currency> {
     invariant(this.involvesToken(token), "TOKEN");
     invariant(totalSupply.currency.equals(this.liquidityToken), "TOTAL_SUPPLY");
@@ -310,7 +328,7 @@ export class Pair {
           const denominator = rootK * FIVE + rootKLast;
           const feeLiquidity = numerator / denominator;
           totalSupplyAdjusted = totalSupply.add(
-            CurrencyAmount.fromRawAmount(this.liquidityToken, feeLiquidity),
+            CurrencyAmount.fromRawAmount(this.liquidityToken, feeLiquidity)
           );
         } else {
           totalSupplyAdjusted = totalSupply;
@@ -323,7 +341,7 @@ export class Pair {
     return CurrencyAmount.fromRawAmount(
       token,
       (liquidity.quotient * this.reserveOf(token).quotient) /
-        totalSupplyAdjusted.quotient,
+        totalSupplyAdjusted.quotient
     );
   }
 }

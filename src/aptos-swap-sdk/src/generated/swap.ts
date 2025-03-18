@@ -68,8 +68,8 @@ export const routerAddLiquidity = (
   typeArgs: [string, string]
 ): InputGenerateTransactionPayloadData => {
   return {
-    typeArguments: typeArgs,
-    functionArguments: args,
+    typeArguments: [],
+    functionArguments: [...typeArgs, ...args],
     function: `${ADDRESS}::${ROUTER_MODULE_NAME}::add_liquidity`,
   };
 };
@@ -115,8 +115,8 @@ export const routerRemoveLiquidity = (
   typeArgs: [string, string]
 ): InputGenerateTransactionPayloadData => {
   return {
-    typeArguments: typeArgs,
-    functionArguments: args,
+    typeArguments: [],
+    functionArguments: [...typeArgs, ...args],
     function: `${ADDRESS}::${ROUTER_MODULE_NAME}::remove_liquidity`,
   };
 };
@@ -128,8 +128,8 @@ export const routerSwapExactInput = (
   typeArgs: [string, string]
 ): InputGenerateTransactionPayloadData => {
   return {
-    typeArguments: typeArgs,
-    functionArguments: args,
+    typeArguments: [],
+    functionArguments: [...typeArgs, ...args],
     function: `${ADDRESS}::${ROUTER_MODULE_NAME}::swap_exact_input`,
   };
 };
@@ -144,8 +144,8 @@ export const routerSwapExactInputDoublehop = (
   typeArgs: [string, string, string]
 ): InputGenerateTransactionPayloadData => {
   return {
-    typeArguments: typeArgs,
-    functionArguments: args,
+    typeArguments: [],
+    functionArguments: [...typeArgs, ...args],
     function: `${ADDRESS}::${ROUTER_MODULE_NAME}::swap_exact_input_doublehop`,
   };
 };
@@ -160,8 +160,8 @@ export const routerSwapExactInputQuadruplehop = (
   typeArgs: [string, string, string, string, string]
 ): InputGenerateTransactionPayloadData => {
   return {
-    typeArguments: typeArgs,
-    functionArguments: args,
+    typeArguments: [],
+    functionArguments: [...typeArgs, ...args],
     function: `${ADDRESS}::${ROUTER_MODULE_NAME}::swap_exact_input_quadruplehop`,
   };
 };
@@ -176,8 +176,8 @@ export const routerSwapExactInputTriplehop = (
   typeArgs: [string, string, string, string]
 ): InputGenerateTransactionPayloadData => {
   return {
-    typeArguments: typeArgs,
-    functionArguments: args,
+    typeArguments: [],
+    functionArguments: [...typeArgs, ...args],
     function: `${ADDRESS}::${ROUTER_MODULE_NAME}::swap_exact_input_triplehop`,
   };
 };
@@ -189,8 +189,8 @@ export const routerSwapExactOutput = (
   typeArgs: [string, string]
 ): InputGenerateTransactionPayloadData => {
   return {
-    typeArguments: typeArgs,
-    functionArguments: args,
+    typeArguments: [],
+    functionArguments: [...typeArgs, ...args],
     function: `${ADDRESS}::${ROUTER_MODULE_NAME}::swap_exact_output`,
   };
 };
@@ -205,8 +205,8 @@ export const routerSwapExactOutputDoublehop = (
   typeArgs: [string, string, string]
 ): InputGenerateTransactionPayloadData => {
   return {
-    typeArguments: typeArgs,
-    functionArguments: args,
+    typeArguments: [],
+    functionArguments: [...typeArgs, ...args],
     function: `${ADDRESS}::${ROUTER_MODULE_NAME}::swap_exact_output_doublehop`,
   };
 };
@@ -221,8 +221,8 @@ export const routerSwapExactOutputQuadruplehop = (
   typeArgs: [string, string, string, string, string]
 ): InputGenerateTransactionPayloadData => {
   return {
-    typeArguments: typeArgs,
-    functionArguments: args,
+    typeArguments: [],
+    functionArguments: [...typeArgs, ...args],
     function: `${ADDRESS}::${ROUTER_MODULE_NAME}::swap_exact_output_quadruplehop`,
   };
 };
@@ -237,8 +237,8 @@ export const routerSwapExactOutputTriplehop = (
   typeArgs: [string, string, string, string]
 ): InputGenerateTransactionPayloadData => {
   return {
-    typeArguments: typeArgs,
-    functionArguments: args,
+    typeArguments: [],
+    functionArguments: [...typeArgs, ...args],
     function: `${ADDRESS}::${ROUTER_MODULE_NAME}::swap_exact_output_triplehop`,
   };
 };

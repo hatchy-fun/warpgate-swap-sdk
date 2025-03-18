@@ -1,0 +1,14 @@
+{
+  "name": "warpgate-swap-sdk-examples",
+  "version": "1.0.0",
+  "description": "Examples demonstrating WarpGate Swap SDK usage",
+  "main": "swap-operations.ts",
+  "scripts": {
+    "start": "ts-node swap-operations.ts"
+  },
+  "dependencies": {
+    "@aptos-labs/ts-sdk": "^1.10.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

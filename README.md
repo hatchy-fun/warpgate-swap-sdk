@@ -32,7 +32,7 @@ import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
 export const config = new AptosConfig({
   network: Network.CUSTOM,
   fullnode: "https://mainnet.movementnetwork.xyz/v1",
-  indexer: "https://indexer.mainnet.movementnetwork.xyz/v1",
+  indexer: "https://indexer.mainnet.movementnetwork.xyz/v1/graphql",
 });
 
 export const aptos = new Aptos(config);
@@ -55,19 +55,19 @@ import {
 
 // Initialize tokens
 const USDC = new Coin(
-  ChainId.MAINNET,
-  "0x1::coin::USDC",
-  6,
-  "USDC",
+  ChainId.MOVE_MAINNET,
+  "0x83121c9f9b0527d1f056e21a950d6bf3b9e9e2e8353d0e95ccea726713cbea39",
+  8,
+  "USDC.e",
   "USD Coin"
 );
 
 const MOVE = new Coin(
-  ChainId.MAINNET,
-  "0x1::coin::MOVE",
+  ChainId.MOVE_MAINNET,
+  "0x447721a30109c662dde9c73a0c2c9c9c459fb5e5a9c92f03c50fa69737f5d08d",
   8,
-  "MOVE",
-  "Movement Token"
+  "USDT.e",
+  "USDT"
 );
 
 // Create a pair and route
@@ -105,12 +105,12 @@ const router = new Router();
 
 // Add liquidity parameters
 const addLiquidityParams = router.addLiquidityParameters(
-  "1000000", // Amount of token X (e.g., 1 USDC with 6 decimals)
+  "100000000", // Amount of token X (e.g., 1 USDC with 6 decimals)
   "100000000", // Amount of token Y (e.g., 1 MOVE with 8 decimals)
-  "995000", // Minimum amount of token X (0.5% slippage)
+  "99500000", // Minimum amount of token X (0.5% slippage)
   "99500000", // Minimum amount of token Y (0.5% slippage)
-  "0x1::coin::USDC", // Token X address
-  "0x1::coin::MOVE", // Token Y address
+  "0x83121c9f9b0527d1f056e21a950d6bf3b9e9e2e8353d0e95ccea726713cbea39", // Token X address (USDC.e)
+  "0x447721a30109c662dde9c73a0c2c9c9c459fb5e5a9c92f03c50fa69737f5d08d", // Token Y address (USDT.e)
   "30" // Fee in basis points (0.3%)
 );
 
@@ -133,10 +133,10 @@ const router = new Router();
 // Remove liquidity parameters
 const removeLiquidityParams = router.removeLiquidityParameters(
   "1000000", // LP token amount to remove
-  "995000", // Minimum amount of token X to receive (0.5% slippage)
+  "99500000", // Minimum amount of token X to receive (0.5% slippage)
   "99500000", // Minimum amount of token Y to receive (0.5% slippage)
-  "0x1::coin::USDC", // Token X address
-  "0x1::coin::MOVE" // Token Y address
+  "0x83121c9f9b0527d1f056e21a950d6bf3b9e9e2e8353d0e95ccea726713cbea39", // Token X address (USDC.e)
+  "0x447721a30109c662dde9c73a0c2c9c9c459fb5e5a9c92f03c50fa69737f5d08d" // Token Y address (USDT.e)
 );
 
 // Submit transaction
