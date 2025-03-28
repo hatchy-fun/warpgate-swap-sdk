@@ -7,7 +7,7 @@ import {
   Percent,
   Router,
   CurrencyAmount,
-} from "../src/aptos-swap-sdk/src";
+} from "warpgate-swap-sdk";
 
 // Initialize tokens
 const USDC = new Coin(
@@ -32,7 +32,7 @@ async function demonstrateOperations() {
   // 1. Adding Liquidity
   console.log("1. Adding Liquidity Transaction Parameters:");
   const addLiquidityParams = Router.addLiquidityParameters(
-    "100000000", // Amount of USDC (1 USDC with 6 decimals)
+    "100000000", // Amount of USDC (1 USDC with 8 decimals)
     "100000000", // Amount of USDT (1 USDT with 8 decimals)
     "99500000", // Minimum amount of USDC (0.5% slippage)
     "99500000", // Minimum amount of USDT (0.5% slippage)
@@ -48,7 +48,7 @@ async function demonstrateOperations() {
 
   // Create a pair and route
   const pair = new Pair(
-    CurrencyAmount.fromRawAmount(USDC, BigInt("1000000")), // 1 USDC
+    CurrencyAmount.fromRawAmount(USDC, BigInt("100000000")), // 1 USDC
     CurrencyAmount.fromRawAmount(USDT, BigInt("100000000")) // 1 USDT
   );
   const route = new Route([pair], USDC, USDT);
@@ -56,7 +56,7 @@ async function demonstrateOperations() {
   // Create a trade with 1 USDC
   const trade = Trade.exactIn(
     route,
-    CurrencyAmount.fromRawAmount(USDC, BigInt("1000000")), // 1 USDC
+    CurrencyAmount.fromRawAmount(USDC, BigInt("100000000")), // 1 USDC
     BigInt(9975) // 0.25% fee
   );
 
