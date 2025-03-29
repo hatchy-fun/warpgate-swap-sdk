@@ -12,8 +12,8 @@ TypeScript SDK for interacting with WarpGate Swap on Movement blockchain. This S
 - Liquidity Pool Management
 - Price Calculations and Pool Information
 - Type-safe with TypeScript
-- Comprehensive Documentation
-- Full Test Coverage
+- Simple and Intuitive Interface
+- Comprehensive Error Handling
 
 ## Installation
 
@@ -21,160 +21,135 @@ TypeScript SDK for interacting with WarpGate Swap on Movement blockchain. This S
 npm install warpgate-swap-sdk @aptos-labs/ts-sdk
 ```
 
-## Core Operations
+## Quick Start
 
-### 1. Initialize Client
+### 1. Initialize SDK
 
 ```typescript
 import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
+import { WarpGateSDK } from "warpgate-swap-sdk";
 
-// For Movement Network
-export const config = new AptosConfig({
+// Initialize Aptos client for Movement Network
+const config = new AptosConfig({
   network: Network.CUSTOM,
   fullnode: "https://mainnet.movementnetwork.xyz/v1",
   indexer: "https://indexer.mainnet.movementnetwork.xyz/v1/graphql",
 });
+const aptos = new Aptos(config);
 
-export const aptos = new Aptos(config);
+// Initialize WarpGate SDK
+const sdk = new WarpGateSDK(aptos);
 ```
 
-### 2. Token Swap
+### 2. Define Your Tokens
 
 ```typescript
-import {
-  Coin,
-  ChainId,
-  Pair,
-  Route,
-  Trade,
-  TradeType,
-  Percent,
-  Router,
-  CurrencyAmount,
-} from "warpgate-swap-sdk";
+// Token definitions
+const USDC = {
+  address: "0x83121c9f9b0527d1f056e21a950d6bf3b9e9e2e8353d0e95ccea726713cbea39",
+  decimals: 6,
+  symbol: "USDC.e",
+  name: "USD Coin",
+};
 
-// Initialize tokens
-const USDC = new Coin(
-  ChainId.MOVE_MAINNET,
-  "0x83121c9f9b0527d1f056e21a950d6bf3b9e9e2e8353d0e95ccea726713cbea39",
-  8,
-  "USDC.e",
-  "USD Coin"
-);
-
-const USDT = new Coin(
-  ChainId.MOVE_MAINNET,
-  "0x447721a30109c662dde9c73a0c2c9c9c459fb5e5a9c92f03c50fa69737f5d08d",
-  8,
-  "USDT.e",
-  "USDT"
-);
-
-// Get current reserves
-const { reserve_x, reserve_y } = await Pair.getReserves(aptos, USDC, USDT);
-console.log(`USDC Reserve: ${reserve_x}`);
-console.log(`USDT Reserve: ${reserve_y}`);
-
-// Create pair and route
-const pair = new Pair(
-  CurrencyAmount.fromRawAmount(USDC, reserve_x),
-  CurrencyAmount.fromRawAmount(USDT, reserve_y)
-);
-const route = new Route([pair], USDC, USDT);
-
-// Create a trade with 1 USDC
-const trade = Trade.exactIn(
-  route,
-  CurrencyAmount.fromRawAmount(USDC, "1000000"), // 1 USDC (6 decimals)
-  9975 // 0.25% fee
-);
-
-// Execute the swap with 0.5% slippage tolerance
-const router = new Router();
-const swapParams = router.swapCallParameters(trade, {
-  allowedSlippage: new Percent("50", "10000"), // 0.5%
-});
-
-// Submit transaction
-const transaction = await client.generateTransaction(
-  account.address,
-  swapParams
-);
-const pendingTx = await client.signAndSubmitTransaction(account, transaction);
-const txResult = await client.waitForTransaction(pendingTx.hash);
+const USDT = {
+  address: "0x447721a30109c662dde9c73a0c2c9c9c459fb5e5a9c92f03c50fa69737f5d08d",
+  decimals: 6,
+  symbol: "USDT.e",
+  name: "USDT",
+};
 ```
 
 ### 3. Add Liquidity
 
 ```typescript
-import { Router } from "warpgate-swap-sdk";
-
-const router = new Router();
-
-// Add liquidity parameters
-const addLiquidityParams = router.addLiquidityParameters(
-  "100000000", // Amount of token X (e.g., 1 USDC with 6 decimals)
-  "100000000", // Amount of token Y (e.g., 1 MOVE with 8 decimals)
-  "99500000", // Minimum amount of token X (0.5% slippage)
-  "99500000", // Minimum amount of token Y (0.5% slippage)
-  "0x83121c9f9b0527d1f056e21a950d6bf3b9e9e2e8353d0e95ccea726713cbea39", // Token X address (USDC.e)
-  "0x447721a30109c662dde9c73a0c2c9c9c459fb5e5a9c92f03c50fa69737f5d08d", // Token Y address (USDT.e)
-  "30" // Fee in basis points (0.3%)
-);
-
-// Submit transaction
-const transaction = await client.generateTransaction(
-  account.address,
-  addLiquidityParams
-);
-const pendingTx = await client.signAndSubmitTransaction(account, transaction);
-const txResult = await client.waitForTransaction(pendingTx.hash);
-```
-
-### 4. Remove Liquidity
-
-```typescript
-import { Router } from "warpgate-swap-sdk";
-
-const router = new Router();
-
-// Remove liquidity parameters
-const removeLiquidityParams = router.removeLiquidityParameters(
-  "1000000", // LP token amount to remove
-  "99500000", // Minimum amount of token X to receive (0.5% slippage)
-  "99500000", // Minimum amount of token Y to receive (0.5% slippage)
-  "0x83121c9f9b0527d1f056e21a950d6bf3b9e9e2e8353d0e95ccea726713cbea39", // Token X address (USDC.e)
-  "0x447721a30109c662dde9c73a0c2c9c9c459fb5e5a9c92f03c50fa69737f5d08d" // Token Y address (USDT.e)
-);
-
-// Submit transaction
-const transaction = await client.generateTransaction(
-  account.address,
-  removeLiquidityParams
-);
-const pendingTx = await client.signAndSubmitTransaction(
-  account,
-  removeLiquidityParams
-);
-const txResult = await client.waitForTransaction(pendingTx.hash);
-```
-
-### 5. Advanced Swap Operations
-
-```typescript
-import { Router, Trade, TradeType } from "warpgate-swap-sdk";
-
-// For exact input swaps (you specify exact input amount)
-const exactInputTrade = Trade.exactIn(route, inputAmount, 9975); // 0.25% fee
-const exactInputParams = router.swapCallParameters(exactInputTrade, {
-  allowedSlippage: new Percent("50", "10000"), // 0.5%
+// Add liquidity with 0.5% slippage tolerance
+const addLiquidityParams = await sdk.addLiquidity({
+  tokenA: USDC,
+  tokenB: USDT,
+  amountA: "1.0",     // 1.0 USDC
+  amountB: "1.0",     // 1.0 USDT
+  slippage: 0.5,      // 0.5% slippage
+  fee: "30",         // 0.3% fee (only needed when creating new pool)
 });
 
-// For exact output swaps (you specify exact output amount)
-const exactOutputTrade = Trade.exactOut(route, outputAmount, 9975); // 0.25% fee
-const exactOutputParams = router.swapCallParameters(exactOutputTrade, {
-  allowedSlippage: new Percent("50", "10000"), // 0.5%
+// Submit transaction using the generated parameters
+const transaction = await aptos.generateTransaction(account.address, addLiquidityParams);
+const pendingTx = await aptos.signAndSubmitTransaction(account, transaction);
+const txResult = await aptos.waitForTransaction(pendingTx.hash);
+```
+
+### 4. Swap Tokens
+
+```typescript
+// Swap tokens with 0.5% slippage tolerance
+const swapParams = await sdk.swap({
+  fromToken: USDC,
+  toToken: USDT,
+  amount: "0.1",      // Swap 0.1 USDC
+  exactIn: true,      // Exact input amount
+  slippage: 0.5,      // 0.5% slippage
 });
+
+// Submit transaction
+const transaction = await aptos.generateTransaction(account.address, swapParams);
+const pendingTx = await aptos.signAndSubmitTransaction(account, transaction);
+const txResult = await aptos.waitForTransaction(pendingTx.hash);
+```
+
+### 5. Remove Liquidity
+
+```typescript
+// Remove liquidity with 0.5% slippage tolerance
+const removeLiquidityParams = await sdk.removeLiquidity({
+  tokenA: USDC,
+  tokenB: USDT,
+  lpAmount: "0.5",    // Remove 50% of LP tokens
+  slippage: 0.5,      // 0.5% slippage
+});
+
+// Submit transaction
+const transaction = await aptos.generateTransaction(account.address, removeLiquidityParams);
+const pendingTx = await aptos.signAndSubmitTransaction(account, transaction);
+const txResult = await aptos.waitForTransaction(pendingTx.hash);
+```
+
+## Error Handling
+
+The SDK provides clear error messages for common scenarios:
+
+1. Non-existent Liquidity Pool:
+```typescript
+try {
+  const swapParams = await sdk.swap({
+    fromToken: USDC,
+    toToken: USDT,
+    amount: "0.1",
+    slippage: 0.5,
+  });
+} catch (error) {
+  if (error.message.includes("Pool doesn't exist")) {
+    console.log("Liquidity pool does not exist yet. Create it first!");
+  }
+}
+```
+
+2. Missing Fee for New Pool:
+```typescript
+try {
+  const addLiquidityParams = await sdk.addLiquidity({
+    tokenA: USDC,
+    tokenB: USDT,
+    amountA: "1.0",
+    amountB: "1.0",
+    slippage: 0.5,
+    // fee parameter missing
+  });
+} catch (error) {
+  if (error.message.includes("must specify a fee")) {
+    console.log("Fee required when creating a new pool");
+  }
+}
 ```
 
 ## Development
@@ -199,6 +174,26 @@ npm test
 ### Scripts
 
 - `npm run build` - Build the SDK
+- `npm test` - Run tests
+- `npm run clean` - Clean build artifacts
+- `npm run format` - Format code with Prettier
+- `npm run lint` - Lint code with ESLint
+
+### Examples
+
+Check out the [examples](./examples) directory for more detailed examples:
+
+1. `simplified-operations.ts` - Basic operations using USDC and USDT
+2. `simplified-operations-fwog.ts` - Basic operations using FWOGBERRY and BUTTER
+3. `swap-operations.ts` - Advanced swap operations with detailed configurations
+
+To run an example:
+
+```bash
+cd examples
+npm install
+npx ts-node simplified-operations.ts
+```
 - `npm test` - Run tests
 - `npm run lint` - Lint the code
 - `npm run format` - Format the code
