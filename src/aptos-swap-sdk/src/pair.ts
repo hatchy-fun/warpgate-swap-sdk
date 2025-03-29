@@ -18,6 +18,8 @@ import { TypeTagStruct, parseTypeTag } from "@aptos-labs/ts-sdk";
 import { HexString } from "./hexString";
 import { Currency } from "./currency";
 import { PAIR_LP_TYPE_TAG, PAIR_RESERVE_TYPE_TAG } from "./constants";
+import { ADDRESS } from "./generated/swap";
+import { routerCreatePair } from "./generated/swap";
 import { Coin } from "./coin";
 
 const typeArgToAddress = (typeArg: TypeTagStruct): string => {
@@ -198,6 +200,141 @@ export class Pair {
   public reserveOf(token: Currency): CurrencyAmount<Currency> {
     invariant(this.involvesToken(token), "TOKEN");
     return token.equals(this.token0) ? this.reserve0 : this.reserve1;
+  }
+
+  /**
+   * Gets the current reserves for a token pair
+   * @param aptos Aptos client instance
+   * @param tokenA First token
+   * @param tokenB Second token
+   * @returns Current reserves as BigInts
+   */
+  /**
+   * Gets the metadata for a token pair including fees
+   * @param aptos Aptos client instance
+   * @param tokenA First token
+   * @param tokenB Second token
+   * @returns Pair metadata including fees
+   */
+  public static async getPairMetadata(
+    aptos: any,
+    tokenA: Currency,
+    tokenB: Currency
+  ): Promise<{ fee: bigint }> {
+    const [token0, token1] = this.sortToken(tokenA, tokenB);
+    const payload = {
+      function: `${ADDRESS}::swap::get_pair_metadata`,
+      typeArguments: [],
+      functionArguments: [token0.address, token1.address],
+    };
+
+    try {
+      const response = await aptos.view({ payload });
+      if (!response || response.length < 9) {
+        throw new Error("Invalid response format");
+      }
+
+      // Extract swap_fee from response (8th index)
+      const swap_fee = response[7];
+      if (!swap_fee) {
+        throw new Error("Swap fee not found in response");
+      }
+
+      const fee = Number(swap_fee);
+      console.log("Extracted fee:", fee);
+
+      return {
+        fee: BigInt(fee),
+      };
+    } catch (error: any) {
+      if (
+        error?.message?.includes("module_not_found") ||
+        error?.message?.includes("Pool does not exist")
+      ) {
+        throw new Error(
+          `Pool does not exist between ${tokenA.symbol} and ${tokenB.symbol}`
+        );
+      }
+      const errorMessage = error?.message || "Unknown error";
+      throw new Error(`Failed to get pair metadata: ${errorMessage}`);
+    }
+  }
+
+  public static async getReserves(
+    aptos: any,
+    tokenA: Currency,
+    tokenB: Currency
+  ): Promise<{ reserve_x: bigint; reserve_y: bigint }> {
+    // Check if pool exists first
+    const poolExists = await this.checkPoolExists(aptos, tokenA, tokenB);
+    if (!poolExists) {
+      throw new Error(
+        `Pool does not exist between ${tokenA.symbol} and ${tokenB.symbol}`
+      );
+    }
+
+    // Try to fetch current reserves
+    const [token0, token1] = this.sortToken(tokenA, tokenB);
+    const payload = {
+      function:
+        `${ADDRESS}::swap::token_reserves` as `${string}::${string}::${string}`,
+      typeArguments: [],
+      functionArguments: [token0.address, token1.address],
+    };
+
+    console.log("\nFetching current reserves...");
+    const response = await aptos.view({ payload });
+    if (!response || response.length < 2 || !response[0] || !response[1]) {
+      throw new Error("Invalid response format");
+    }
+
+    const [reserve_x, reserve_y] = response;
+    console.log(`Token0 Reserve: ${reserve_x}`);
+    console.log(`Token1 Reserve: ${reserve_y}\n`);
+
+    return {
+      reserve_x: BigInt(reserve_x.toString()),
+      reserve_y: BigInt(reserve_y.toString()),
+    };
+  }
+
+  /**
+   * Checks if the pool exists for the given token pair
+   * @param aptos Aptos client instance
+   * @param tokenA First token
+   * @param tokenB Second token
+   * @returns true if pool exists, false otherwise
+   */
+  public static async checkPoolExists(
+    aptos: any,
+    tokenA: Currency,
+    tokenB: Currency
+  ): Promise<boolean> {
+    const [token0, token1] = this.sortToken(tokenA, tokenB);
+    const payload = {
+      function:
+        `${ADDRESS}::swap::token_reserves` as `${string}::${string}::${string}`,
+      typeArguments: [],
+      functionArguments: [token0.address, token1.address],
+    };
+
+    try {
+      const response = await aptos.view({ payload });
+      return response && response.length >= 2 && response[0] && response[1];
+    } catch (error: any) {
+      return false;
+    }
+  }
+
+  /**
+   * Creates a new liquidity pool for the given token pair
+   * @param tokenA First token
+   * @param tokenB Second token
+   * @returns Transaction payload to create the pool
+   */
+  public static createPool(tokenA: Currency, tokenB: Currency) {
+    const [token0, token1] = this.sortToken(tokenA, tokenB);
+    return routerCreatePair([token0.address, token1.address]);
   }
 
   public getOutputAmount(

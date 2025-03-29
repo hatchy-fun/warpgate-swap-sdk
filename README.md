@@ -62,7 +62,7 @@ const USDC = new Coin(
   "USD Coin"
 );
 
-const MOVE = new Coin(
+const USDT = new Coin(
   ChainId.MOVE_MAINNET,
   "0x447721a30109c662dde9c73a0c2c9c9c459fb5e5a9c92f03c50fa69737f5d08d",
   8,
@@ -70,9 +70,17 @@ const MOVE = new Coin(
   "USDT"
 );
 
-// Create a pair and route
-const pair = new Pair(USDC, MOVE);
-const route = new Route([pair], USDC, MOVE);
+// Get current reserves
+const { reserve_x, reserve_y } = await Pair.getReserves(aptos, USDC, USDT);
+console.log(`USDC Reserve: ${reserve_x}`);
+console.log(`USDT Reserve: ${reserve_y}`);
+
+// Create pair and route
+const pair = new Pair(
+  CurrencyAmount.fromRawAmount(USDC, reserve_x),
+  CurrencyAmount.fromRawAmount(USDT, reserve_y)
+);
+const route = new Route([pair], USDC, USDT);
 
 // Create a trade with 1 USDC
 const trade = Trade.exactIn(
