@@ -53,6 +53,7 @@ test("exports", () => {
       "computePriceImpact",
       "getTokenComparator",
       "sortCurrencies",
+      "WarpGateSDK",
     ]
   `);
 });
