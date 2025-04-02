@@ -1,7 +1,7 @@
 import type { InputGenerateTransactionPayloadData } from "@aptos-labs/ts-sdk";
 
 export const ADDRESS =
-  "0x1df53c1df1dd8b576c7c74467e60078321db944dbf82be10db00915d998c5202" as const;
+  "0xcc0b20d40413ff386d88bf22d7683c86cf21f7c7a2e50799a9da837cbac21209" as const;
 
 export const SWAP_MODULE_NAME = "swap" as const;
 export const ROUTER_MODULE_NAME = "router" as const;

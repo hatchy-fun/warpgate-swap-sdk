@@ -132,6 +132,37 @@ export class Pair {
   }
 
   /**
+   * Gets the LP token address for a pair of tokens
+   * @param aptos Aptos client instance
+   * @param token0 First token
+   * @param token1 Second token
+   * @returns LP token address
+   */
+  public static async getLpToken(
+    aptos: any,
+    tokenA: Currency,
+    tokenB: Currency
+  ): Promise<string> {
+    try {
+      const [token0, token1] = this.sortToken(tokenA, tokenB);
+      const payload = {
+        function:
+          `${ADDRESS}::swap::get_lp_token` as `${string}::${string}::${string}`,
+        typeArguments: [],
+        functionArguments: [token0.address, token1.address],
+      };
+
+      const response = await aptos.view({ payload });
+
+      return response[0].inner;
+    } catch (error: any) {
+      throw new Error(
+        `Failed to get LP token address: ${error?.message || "Unknown error"}`
+      );
+    }
+  }
+
+  /**
    * Returns true if the token is either token0 or token1
    * @param token to check
    */
@@ -282,15 +313,12 @@ export class Pair {
       functionArguments: [token0.address, token1.address],
     };
 
-    console.log("\nFetching current reserves...");
     const response = await aptos.view({ payload });
     if (!response || response.length < 2 || !response[0] || !response[1]) {
       throw new Error("Invalid response format");
     }
 
     const [reserve_x, reserve_y] = response;
-    console.log(`Token0 Reserve: ${reserve_x}`);
-    console.log(`Token1 Reserve: ${reserve_y}\n`);
 
     return {
       reserve_x: BigInt(reserve_x.toString()),
@@ -439,16 +467,51 @@ export class Pair {
     return CurrencyAmount.fromRawAmount(this.liquidityToken, liquidity);
   }
 
+  /**
+   * Gets the total supply of LP tokens for this pair using GraphQL
+   * @param lpTokenAddress LP token address
+   * @param lpToken LP token currency
+   * @returns Total supply as CurrencyAmount
+   */
+  public async getTotalSupply(
+    aptos: any,
+    lpTokenAddress: string,
+    lpToken: Currency
+  ): Promise<CurrencyAmount<Currency>> {
+    try {
+      // Ensure address is padded to correct length (64 characters after 0x)
+      const hexAddress = new HexString(lpTokenAddress).hex().slice(2); // Remove 0x
+      const formattedAddress = `0x${hexAddress.padStart(64, "0")}`;
+      console.log("formattedAddress", formattedAddress);
+
+      const metadata =
+        await aptos.fungibleAsset.getFungibleAssetMetadataByAssetType({
+          assetType: formattedAddress,
+        });
+
+      if (!metadata?.supply_v2) {
+        throw new Error("Supply not found in metadata");
+      }
+
+      return CurrencyAmount.fromRawAmount(lpToken, BigInt(metadata.supply_v2));
+    } catch (error: any) {
+      throw new Error(
+        `Failed to get total supply: ${error?.message || "Unknown error"}`
+      );
+    }
+  }
+
   public getLiquidityValue(
     token: Currency,
     totalSupply: CurrencyAmount<Currency>,
     liquidity: CurrencyAmount<Currency>,
+    lpToken: Currency,
     feeOn = false,
     kLast?: BigintIsh
   ): CurrencyAmount<Currency> {
     invariant(this.involvesToken(token), "TOKEN");
-    invariant(totalSupply.currency.equals(this.liquidityToken), "TOTAL_SUPPLY");
-    invariant(liquidity.currency.equals(this.liquidityToken), "LIQUIDITY");
+    invariant(totalSupply.currency.equals(lpToken), "TOTAL_SUPPLY");
+    invariant(liquidity.currency.equals(lpToken), "LIQUIDITY");
     invariant(liquidity.quotient <= totalSupply.quotient, "LIQUIDITY");
 
     let totalSupplyAdjusted: CurrencyAmount<Currency>;
@@ -465,7 +528,7 @@ export class Pair {
           const denominator = rootK * FIVE + rootKLast;
           const feeLiquidity = numerator / denominator;
           totalSupplyAdjusted = totalSupply.add(
-            CurrencyAmount.fromRawAmount(this.liquidityToken, feeLiquidity)
+            CurrencyAmount.fromRawAmount(lpToken, feeLiquidity)
           );
         } else {
           totalSupplyAdjusted = totalSupply;

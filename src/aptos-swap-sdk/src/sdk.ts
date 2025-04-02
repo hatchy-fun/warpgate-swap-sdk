@@ -24,9 +24,17 @@ export interface AddLiquidityParams {
   tokenA: TokenInfo;
   tokenB: TokenInfo;
   amountA: string; // Human readable amount
-  amountB: string; // Human readable amount
+  amountB?: string; // Optional for existing pools
   slippage?: number; // Default 0.5%
   fee?: string; // Fee in basis points (e.g., "30" for 0.3%). Used only when creating new pool.
+}
+
+export interface PoolInfo {
+  exists: boolean;
+  fee?: string;
+  reserveA?: string;
+  reserveB?: string;
+  price?: string;
 }
 
 export interface SwapParams {
@@ -79,6 +87,59 @@ export class WarpGateSDK {
     return minimumAmount;
   }
 
+  async getPoolInfo(tokenA: TokenInfo, tokenB: TokenInfo): Promise<PoolInfo> {
+    const coinA = this.createCoin(tokenA);
+    const coinB = this.createCoin(tokenB);
+
+    try {
+      const [metadata, reserves] = await Promise.all([
+        Pair.getPairMetadata(this.aptos, coinA, coinB),
+        Pair.getReserves(this.aptos, coinA, coinB),
+      ]);
+
+      const [token0] = Pair.sortToken(coinA, coinB);
+      const [reserve0, reserve1] = token0.equals(coinA)
+        ? [reserves.reserve_x, reserves.reserve_y]
+        : [reserves.reserve_y, reserves.reserve_x];
+
+      // Calculate price based on reserves
+      const price =
+        Number(reserve1) /
+        Math.pow(10, tokenB.decimals) /
+        (Number(reserve0) / Math.pow(10, tokenA.decimals));
+
+      return {
+        exists: true,
+        fee: metadata.fee.toString(),
+        reserveA: reserve0.toString(),
+        reserveB: reserve1.toString(),
+        price: price.toString(),
+      };
+    } catch (error) {
+      return { exists: false };
+    }
+  }
+
+  async calculateDependentAmount(
+    tokenA: TokenInfo,
+    tokenB: TokenInfo,
+    amount: string,
+    isReversed: boolean = false
+  ): Promise<string | undefined> {
+    const poolInfo = await this.getPoolInfo(tokenA, tokenB);
+
+    if (!poolInfo.exists || !poolInfo.price) {
+      return undefined;
+    }
+
+    const price = Number(poolInfo.price);
+    const inputAmount = Number(amount);
+
+    return isReversed
+      ? (inputAmount / price).toFixed(tokenA.decimals)
+      : (inputAmount * price).toFixed(tokenB.decimals);
+  }
+
   async addLiquidity({
     tokenA,
     tokenB,
@@ -91,25 +152,46 @@ export class WarpGateSDK {
     const coinA = this.createCoin(tokenA);
     const coinB = this.createCoin(tokenB);
 
+    // Get pool info
+    const poolInfo = await this.getPoolInfo(tokenA, tokenB);
+    const poolExists = poolInfo.exists;
+
+    // Handle amount calculations
+    let finalAmountB = amountB;
+    if (poolExists && !amountB) {
+      // Calculate amountB based on pool price if not provided
+      finalAmountB = await this.calculateDependentAmount(
+        tokenA,
+        tokenB,
+        amountA
+      );
+      if (!finalAmountB) {
+        throw new Error("Failed to calculate dependent amount");
+      }
+    } else if (!poolExists && !amountB) {
+      throw new Error("Both amounts must be provided when creating a new pool");
+    }
+
     // Convert amounts to raw values
     const rawAmountA = this.parseAmount(amountA, tokenA.decimals);
-    const rawAmountB = this.parseAmount(amountB, tokenB.decimals);
+    const rawAmountB = this.parseAmount(finalAmountB!, tokenB.decimals);
 
     // Calculate minimum amounts based on slippage
-    const minAmountA = this.calculateMinimumAmount(rawAmountA, slippage);
-    const minAmountB = this.calculateMinimumAmount(rawAmountB, slippage);
+    const minAmountA = this.calculateMinimumAmount(
+      rawAmountA,
+      slippage
+    ).toString();
+    const minAmountB = this.calculateMinimumAmount(
+      rawAmountB,
+      slippage
+    ).toString();
 
-    // Get pool's fee or use provided fee
+    // Get or validate pool fee
     let poolFee: string;
-    try {
-      // Try to get existing pool's fee
-      const metadata = await Pair.getPairMetadata(this.aptos, coinA, coinB);
-      poolFee = metadata.fee.toString();
-      console.log(
-        `Pool exists, using existing pool fee: ${poolFee} basis points`
-      );
-    } catch (error) {
-      // If pool doesn't exist, require fee parameter
+    if (poolExists) {
+      poolFee = poolInfo.fee!;
+      console.log(`Using existing pool fee: ${poolFee} basis points`);
+    } else {
       if (!fee) {
         throw new Error(
           `Pool doesn't exist between ${tokenA.symbol} and ${tokenB.symbol}. ` +
@@ -117,17 +199,15 @@ export class WarpGateSDK {
         );
       }
       poolFee = fee;
-      console.log(
-        `Pool doesn't exist yet. Creating pool with fee: ${poolFee} basis points`
-      );
+      console.log(`Creating new pool with fee: ${poolFee} basis points`);
     }
 
     // Generate add liquidity parameters
     return Router.addLiquidityParameters(
       rawAmountA.toString(),
       rawAmountB.toString(),
-      minAmountA.toString(),
-      minAmountB.toString(),
+      minAmountA,
+      minAmountB,
       coinA.address,
       coinB.address,
       poolFee
@@ -154,14 +234,20 @@ export class WarpGateSDK {
       Pair.getPairMetadata(this.aptos, tokenIn, tokenOut),
     ]);
 
+    // Create pair instance with sorted tokens
+    const [token0] = Pair.sortToken(tokenIn, tokenOut);
+    const [reserve0, reserve1] = token0.equals(tokenIn)
+      ? [reserves.reserve_x, reserves.reserve_y]
+      : [reserves.reserve_y, reserves.reserve_x];
+
     console.log("\nFetching current reserves...");
     console.log(`Token0 Reserve: ${reserves.reserve_x}`);
     console.log(`Token1 Reserve: ${reserves.reserve_y}\n`);
 
     // Create pair and route
     const pair = new Pair(
-      CurrencyAmount.fromRawAmount(tokenIn, reserves.reserve_x),
-      CurrencyAmount.fromRawAmount(tokenOut, reserves.reserve_y)
+      CurrencyAmount.fromRawAmount(tokenIn, reserve0),
+      CurrencyAmount.fromRawAmount(tokenOut, reserve1)
     );
     const route = new Route([pair], tokenIn, tokenOut);
 
@@ -201,19 +287,70 @@ export class WarpGateSDK {
     const coinA = this.createCoin(tokenA);
     const coinB = this.createCoin(tokenB);
 
-    // Convert LP amount to raw value (LP tokens always have 8 decimals)
+    // Get pair instance and reserves
+    const reserves = await Pair.getReserves(this.aptos, coinA, coinB);
+    const lpTokenAddress = await Pair.getLpToken(this.aptos, coinA, coinB);
+
+    // Create pair instance with sorted tokens
+    const [token0, token1] = Pair.sortToken(coinA, coinB);
+    const [reserve0, reserve1] = token0.equals(coinA)
+      ? [reserves.reserve_x, reserves.reserve_y]
+      : [reserves.reserve_y, reserves.reserve_x];
+
+    const pair = new Pair(
+      CurrencyAmount.fromRawAmount(token0, reserve0),
+      CurrencyAmount.fromRawAmount(token1, reserve1)
+    );
+
+    // Convert LP amount to CurrencyAmount
     const rawLPAmount = this.parseAmount(lpAmount, 8);
+    const lpToken = new Coin(
+      coinA.chainId,
+      lpTokenAddress,
+      8,
+      "Warpgate-LP",
+      "Warpgate-LP"
+    );
+    const liquidityAmount = CurrencyAmount.fromRawAmount(lpToken, rawLPAmount);
 
-    // Calculate minimum amounts (using same slippage for both tokens)
-    const minAmount = this.calculateMinimumAmount(rawLPAmount, slippage);
+    // Get total supply of LP tokens
+    const totalSupply = await pair.getTotalSupply(
+      this.aptos,
+      lpTokenAddress,
+      lpToken
+    );
+    // Calculate exact amounts to receive
+    const token0Amount = pair.getLiquidityValue(
+      token0.equals(coinA) ? token0 : token1,
+      totalSupply,
+      liquidityAmount,
+      lpToken,
+      false // feeOn
+    );
+    const token1Amount = pair.getLiquidityValue(
+      token1.equals(coinB) ? token1 : token0,
+      totalSupply,
+      liquidityAmount,
+      lpToken,
+      false // feeOn
+    );
 
-    // Generate remove liquidity parameters
+    // Calculate minimum amounts with slippage
+    const minAmount0 = this.calculateMinimumAmount(
+      token0Amount.quotient,
+      slippage
+    );
+    const minAmount1 = this.calculateMinimumAmount(
+      token1Amount.quotient,
+      slippage
+    );
+
     return Router.removeLiquidityParameters(
-      coinA.address,
-      coinB.address,
       rawLPAmount.toString(),
-      minAmount.toString(),
-      minAmount.toString()
+      minAmount0.toString(),
+      minAmount1.toString(),
+      token0.address,
+      token1.address
     );
   }
 }

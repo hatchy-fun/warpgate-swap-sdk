@@ -11,7 +11,7 @@ TypeScript SDK for interacting with WarpGate Swap on Movement blockchain. This S
 - Token Swapping with Best Price Routing
 - Liquidity Pool Management
 - Price Calculations and Pool Information
-- Type-safe with TypeScript
+- Type-safe Implementation
 - Simple and Intuitive Interface
 - Comprehensive Error Handling
 
@@ -60,101 +60,75 @@ const USDT = {
 };
 ```
 
-### 3. Add Liquidity
+### 3. Check Pool Information
 
 ```typescript
-// Add liquidity with 0.5% slippage tolerance
-const addLiquidityParams = await sdk.addLiquidity({
-  tokenA: USDC,
-  tokenB: USDT,
-  amountA: "1.0",     // 1.0 USDC
-  amountB: "1.0",     // 1.0 USDT
-  slippage: 0.5,      // 0.5% slippage
-  fee: "30",         // 0.3% fee (only needed when creating new pool)
-});
-
-// Submit transaction using the generated parameters
-const transaction = await aptos.generateTransaction(account.address, addLiquidityParams);
-const pendingTx = await aptos.signAndSubmitTransaction(account, transaction);
-const txResult = await aptos.waitForTransaction(pendingTx.hash);
+// Get pool information and check if it exists
+const poolInfo = await sdk.getPoolInfo(tokenA, tokenB);
+// Returns: { exists: boolean, fee?: bigint, reserveA?: string, reserveB?: string }
 ```
 
-### 4. Swap Tokens
+### 4. Add Liquidity
 
 ```typescript
-// Swap tokens with 0.5% slippage tolerance
+// For existing pools:
+// Only need to specify one amount, the other is calculated automatically
+const addToExistingPool = await sdk.addLiquidity({
+  tokenA,
+  tokenB,
+  amountA: "1", // Amount of tokenA to add
+  slippage: 0.5, // Maximum price slippage tolerance (0.5%)
+});
+
+// For new pools:
+// Must specify both amounts and pool fee
+const createNewPool = await sdk.addLiquidity({
+  tokenA,
+  tokenB,
+  amountA: "1000", // Initial tokenA amount
+  amountB: "1000", // Initial tokenB amount
+  fee: "10", // Pool fee in basis points (0.1%)
+  slippage: 0.5, // Maximum price slippage tolerance (0.5%)
+});
+// Both return: InputGenerateTransactionPayloadData for creating the transaction
+```
+
+### 5. Swap Tokens
+
+```typescript
+// The SDK automatically finds the best route for the swap
 const swapParams = await sdk.swap({
-  fromToken: USDC,
-  toToken: USDT,
-  amount: "0.1",      // Swap 0.1 USDC
-  exactIn: true,      // Exact input amount
-  slippage: 0.5,      // 0.5% slippage
+  fromToken: tokenA,
+  toToken: tokenB,
+  amount: "1", // Amount of fromToken to swap
+  slippage: 0.5, // Maximum price slippage tolerance (0.5%)
 });
-
-// Submit transaction
-const transaction = await aptos.generateTransaction(account.address, swapParams);
-const pendingTx = await aptos.signAndSubmitTransaction(account, transaction);
-const txResult = await aptos.waitForTransaction(pendingTx.hash);
+// Returns: InputGenerateTransactionPayloadData for creating the transaction
 ```
 
-### 5. Remove Liquidity
+### 6. Remove Liquidity
 
 ```typescript
-// Remove liquidity with 0.5% slippage tolerance
+// Remove liquidity and receive both tokens back
 const removeLiquidityParams = await sdk.removeLiquidity({
-  tokenA: USDC,
-  tokenB: USDT,
-  lpAmount: "0.5",    // Remove 50% of LP tokens
-  slippage: 0.5,      // 0.5% slippage
+  tokenA,
+  tokenB,
+  lpAmount: "1", // Amount of LP tokens to burn
+  slippage: 0.5, // Maximum price slippage tolerance (0.5%)
 });
-
-// Submit transaction
-const transaction = await aptos.generateTransaction(account.address, removeLiquidityParams);
-const pendingTx = await aptos.signAndSubmitTransaction(account, transaction);
-const txResult = await aptos.waitForTransaction(pendingTx.hash);
+// Returns: InputGenerateTransactionPayloadData for creating the transaction
 ```
 
-## Error Handling
+## Complete Example
 
-The SDK provides clear error messages for common scenarios:
+Check out our [example implementation](./examples/sdk-example.ts) that demonstrates:
 
-1. Non-existent Liquidity Pool:
-```typescript
-try {
-  const swapParams = await sdk.swap({
-    fromToken: USDC,
-    toToken: USDT,
-    amount: "0.1",
-    slippage: 0.5,
-  });
-} catch (error) {
-  if (error.message.includes("Pool doesn't exist")) {
-    console.log("Liquidity pool does not exist yet. Create it first!");
-  }
-}
-```
-
-2. Missing Fee for New Pool:
-```typescript
-try {
-  const addLiquidityParams = await sdk.addLiquidity({
-    tokenA: USDC,
-    tokenB: USDT,
-    amountA: "1.0",
-    amountB: "1.0",
-    slippage: 0.5,
-    // fee parameter missing
-  });
-} catch (error) {
-  if (error.message.includes("must specify a fee")) {
-    console.log("Fee required when creating a new pool");
-  }
-}
-```
+1. Checking pool existence
+2. Adding liquidity (both new and existing pools)
+3. Performing swaps
+4. Removing liquidity
 
 ## Development
-
-### Setup
 
 ```bash
 # Clone the repository
@@ -166,59 +140,19 @@ npm install
 
 # Build the project
 npm run build
-
-# Run tests
-npm test
 ```
 
-### Scripts
+### Available Scripts
 
 - `npm run build` - Build the SDK
-- `npm test` - Run tests
 - `npm run clean` - Clean build artifacts
 - `npm run format` - Format code with Prettier
 - `npm run lint` - Lint code with ESLint
 
-### Examples
-
-Check out the [examples](./examples) directory for more detailed examples:
-
-1. `simplified-operations.ts` - Basic operations using USDC and USDT
-2. `simplified-operations-fwog.ts` - Basic operations using FWOGBERRY and BUTTER
-3. `swap-operations.ts` - Advanced swap operations with detailed configurations
-
-To run an example:
-
-```bash
-cd examples
-npm install
-npx ts-node simplified-operations.ts
-```
-- `npm test` - Run tests
-- `npm run lint` - Lint the code
-- `npm run format` - Format the code
-
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Development Process
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## Security
-
-For security concerns, please open a security advisory on GitHub.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-- [GitHub Issues](https://github.com/hatchy-fun/warpgate-swap-sdk/issues)
-- [Documentation](https://github.com/hatchy-fun/warpgate-swap-sdk#readme)

@@ -10,6 +10,6 @@
     "@aptos-labs/ts-sdk": "^1.10.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3",
-    "warpgate-swap-sdk": "^1.0.7"
+    "warpgate-swap-sdk": "^1.1.1"
   }
 }

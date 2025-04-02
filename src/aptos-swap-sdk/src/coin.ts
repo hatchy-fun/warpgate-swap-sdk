@@ -10,7 +10,7 @@ export class Coin extends Token {
     decimals: number,
     symbol: string,
     name?: string,
-    projectLink?: string,
+    projectLink?: string
   ) {
     super(
       chainId,
@@ -18,7 +18,7 @@ export class Coin extends Token {
       decimals,
       symbol,
       name,
-      projectLink,
+      projectLink
     );
   }
 
